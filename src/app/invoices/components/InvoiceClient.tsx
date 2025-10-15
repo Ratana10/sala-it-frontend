@@ -1,50 +1,53 @@
 "use client";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-import React, { useState } from "react";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 import {
   InvoiceData,
   ISchoolInfo,
   openInvoicePrint,
   SchoolInvoiceTemplate,
 } from "../../../templates/school-invoice-template";
-import { DownloadIcon, Trash2Icon } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
+import { CirclePlusIcon, DownloadIcon, Trash2Icon } from "lucide-react";
+import { InvoiceFormValues, invoiceSchema } from "@/schemas/invoice";
 
 type Item = {
   id: number;
   description: string;
-  discount: number;
-  amount: number;
+  discount: number | string;
+  amount: number | string;
 };
 
-const InvoiceClient = () => {
-  const [student, setStudent] = useState({
-    name: "Name",
-    email: "@gmail.com",
-    phone: "(+855)12 345 678",
+export default function InvoiceClient() {
+  const form = useForm<InvoiceFormValues>({
+    resolver: zodResolver(invoiceSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      phone: "(+855)12 345 678",
+    },
   });
 
   const [items, setItems] = useState<Item[]>([
-    {
-      id: 1,
-      description: "Course",
-      discount: 0,
-      amount: 60,
-    },
+    { id: 1, description: "Course", discount: 0, amount: 60 },
   ]);
 
-  const [remark, setRemark] = useState(
-    "Please note that once payment has been made, it cannot be refunded."
-  );
-
   const schoolInfo: ISchoolInfo = {
-    logoUrl:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTWq-PBHFpHVPjKxchEcimpzIU0fdeIE37yzQ&s",
+    logoUrl: "/logo/sala-it_logo.jpg",
     name: "Sala-IT",
     phone: "(+855)11 504 463",
     telegram: "@phanith_noch",
@@ -54,8 +57,8 @@ const InvoiceClient = () => {
     websiteUrl: "https://app.salaitdevelopment.com",
     slogan:
       "Thank you for choosing Sala-IT. Unlock your potential and grow with technology!",
-    remark: "Once payment has been made, it cannot be refunded,",
-    signatureUrl: "./signature.png",
+    remark: "Once payment has been made, it cannot be refunded.",
+    signatureUrl: "/signature.png",
   };
 
   const today = new Date().toLocaleDateString("en-GB", {
@@ -64,16 +67,25 @@ const InvoiceClient = () => {
     year: "numeric",
   });
 
-  const addItem = () => {
+  const calculateTotalWithDiscount = (
+    items: { amount: number | string; discount: number | string }[]
+  ) => {
+    return items.reduce((sum, item) => {
+      const amount = Number(item.amount) || 0;
+      const discount = Number(item.discount) || 0;
+      const discounted = amount - (amount * discount) / 100;
+      return sum + discounted;
+    }, 0);
+  };
+
+  const addItem = () =>
     setItems((prev) => [
       ...prev,
       { id: Date.now(), description: "", discount: 0, amount: 0 },
     ]);
-  };
 
-  const removeItem = (id: number) => {
+  const removeItem = (id: number) =>
     setItems((prev) => prev.filter((item) => item.id !== id));
-  };
 
   const updateItem = (
     id: number,
@@ -81,20 +93,36 @@ const InvoiceClient = () => {
     value: string | number
   ) => {
     setItems((prev) =>
-      prev.map((it) => (it.id === id ? { ...it, [field]: value as never } : it))
+      prev.map((it) => {
+        if (it.id !== id) return it;
+        if (field === "discount" || field === "amount") {
+          return { ...it, [field]: value === "" ? "" : Number(value) };
+        }
+        return { ...it, [field]: value };
+      })
     );
   };
 
   const handlePrint = async () => {
+    const valid = await form.trigger();
+    if (!valid) return;
+
+    const values = form.getValues();
+
     const data: InvoiceData = {
       invoiceDate: today,
-      schoolInfo: schoolInfo,
+      schoolInfo,
       studentInfo: {
-        name: student.name,
-        email: student.email,
-        phone: student.phone,
+        name: values.name,
+        email: values.email,
+        phone: values.phone,
       },
-      items,
+      items: items.map((i) => ({
+        ...i,
+        amount: Number(i.amount) || 0,
+        discount: Number(i.discount) || 0,
+      })),
+      totalAmount: calculateTotalWithDiscount(items),
     };
 
     const html = SchoolInvoiceTemplate(data);
@@ -103,141 +131,163 @@ const InvoiceClient = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 grid md:grid-cols-2 gap-6">
-      {/* ================= Left Side: Form ================= */}
+      {/* ========== LEFT: FORM ========== */}
       <Card className="shadow-md print:hidden">
         <CardContent className="p-4 sm:p-6 space-y-6">
-          {/* Print Button on Left Panel */}
           <div className="flex justify-between items-center flex-wrap gap-2">
             <h2 className="text-lg font-semibold text-gray-800">Invoice</h2>
             <Button
               onClick={handlePrint}
               size="sm"
-              className="text-white"
+              className="text-white cursor-pointer"
               variant="default"
             >
-              <DownloadIcon className="w-4 h-4 mr-1" /> Print PDF
+              <DownloadIcon className="w-4 h-4" /> Download PDF
             </Button>
           </div>
 
-          {/* Student Info */}
-          <div>
-            <h3 className="font-medium mb-2">Student Information</h3>
-            <div className="space-y-3">
-              {["name", "email", "phone"].map((field) => (
-                <div key={field} className="space-y-2">
-                  <Label className="capitalize">
-                    {field}{" "}
-                    <span className="text-muted-foreground">(Optional)</span>
-                  </Label>
-                  <Input
-                    value={student[field as keyof typeof student]}
-                    onChange={(e) =>
-                      setStudent({ ...student, [field]: e.target.value })
-                    }
+          <Form {...form}>
+            <form className="space-y-6">
+              {/* Student Info */}
+              <div>
+                <h3 className="font-medium mb-2">Student Information</h3>
+                <div className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Name <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter student name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Email{" "}
+                          <span className="text-muted-foreground">
+                            (Optional)
+                          </span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter mail address" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Phone{" "}
+                          <span className="text-muted-foreground">
+                            (Optional)
+                          </span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input placeholder="(+855)..." {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
                   />
                 </div>
-              ))}
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Items */}
-          <div>
-            <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-              <h3 className="font-medium">Course Items</h3>
-              <Button
-                onClick={addItem}
-                size="sm"
-                className="text-black cursor-pointer"
-                variant="outline"
-              >
-                + Add Item
-              </Button>
-            </div>
-
-            <div className="space-y-2">
-              {/* Header labels - hide on mobile */}
-              <div className="hidden sm:grid sm:grid-cols-[2fr_1fr_1fr_auto] gap-2 text-sm font-medium text-gray-600">
-                <span>Description</span>
-                <span className="text-center">Discount (%)</span>
-                <span className="text-center">Amount (USD)</span>
-                <span className="text-center">Action</span>
               </div>
 
-              {/* Input rows */}
-              <div className="space-y-2">
-                {items.map((item) => (
-                  <div
-                    key={item.id}
-                    className="grid gap-2 items-start sm:grid-cols-[2fr_1fr_1fr_auto] grid-cols-1 border border-gray-200 sm:border-0 p-2 sm:p-0 rounded-md bg-white sm:bg-transparent"
+              <Separator />
+
+              {/* Items */}
+              <div>
+                <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                  <h3 className="font-medium">Course Items</h3>
+                  <Button
+                    onClick={addItem}
+                    type="button"
+                    size="sm"
+                    className="text-black cursor-pointer"
+                    variant="outline"
                   >
-                    {/* Description */}
-                    <Textarea
-                      value={item.description}
-                      onChange={(e) =>
-                        updateItem(item.id, "description", e.target.value)
-                      }
-                      className="min-h-[60px] resize-none w-full"
-                      placeholder="Enter course details..."
-                    />
+                    <CirclePlusIcon className="w-4 h-4" /> Add Item
+                  </Button>
+                </div>
 
-                    {/* Discount */}
-                    <Input
-                      type="number"
-                      value={item.discount}
-                      onChange={(e) =>
-                        updateItem(item.id, "discount", Number(e.target.value))
-                      }
-                      className="w-full"
-                      placeholder="Discount"
-                    />
-
-                    {/* Amount */}
-                    <Input
-                      type="number"
-                      value={item.amount}
-                      onChange={(e) =>
-                        updateItem(item.id, "amount", Number(e.target.value))
-                      }
-                      className="w-full"
-                      placeholder="Amount"
-                    />
-
-                    {/* Action Button */}
-                    <div className="flex justify-end sm:justify-center">
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        onClick={() => removeItem(item.id)}
-                        className="bg-red-600 hover:bg-red-700 text-white w-7 h-7"
-                        disabled={items.length === 1}
-                      >
-                        <Trash2Icon className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
+                <div className="space-y-2">
+                  <div className="hidden sm:grid sm:grid-cols-[2fr_1fr_1fr_auto] gap-2 text-sm font-medium text-gray-600">
+                    <span>Description</span>
+                    <span className="text-center">Discount (%)</span>
+                    <span className="text-center">Amount (USD)</span>
+                    <span className="text-center">Action</span>
                   </div>
-                ))}
+
+                  {items.map((item) => (
+                    <div
+                      key={item.id}
+                      className="grid gap-2 items-start sm:grid-cols-[2fr_1fr_1fr_auto] grid-cols-1 border border-gray-200 sm:border-0 p-2 sm:p-0 rounded-md bg-white sm:bg-transparent"
+                    >
+                      <Textarea
+                        value={item.description}
+                        onChange={(e) =>
+                          updateItem(item.id, "description", e.target.value)
+                        }
+                        className="min-h-[60px] resize-none w-full"
+                        placeholder="Enter course details..."
+                      />
+
+                      <Input
+                        type="number"
+                        value={item.discount}
+                        onChange={(e) =>
+                          updateItem(item.id, "discount", e.target.value)
+                        }
+                        className="w-full"
+                        placeholder="Discount"
+                      />
+
+                      <Input
+                        type="number"
+                        value={item.amount}
+                        onChange={(e) =>
+                          updateItem(item.id, "amount", e.target.value)
+                        }
+                        className="w-full"
+                        placeholder="Amount"
+                      />
+
+                      <div className="flex justify-end sm:justify-center">
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          onClick={() => removeItem(item.id)}
+                          className="bg-red-600 hover:bg-red-700 text-white w-7 h-7 cursor-pointer"
+                          disabled={items.length === 1}
+                        >
+                          <Trash2Icon className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Remark */}
-          <div>
-            <Label>Remark</Label>
-            <Input
-              value={remark}
-              onChange={(e) => setRemark(e.target.value)}
-              placeholder="Enter remark..."
-            />
-          </div>
+            </form>
+          </Form>
         </CardContent>
       </Card>
 
-      {/* ================= Right Side: Invoice Preview ================= */}
+      {/* ========== RIGHT: PREVIEW ========== */}
       <Card className="shadow-lg border border-gray-200 print:shadow-none print:border-0 overflow-hidden">
         <CardContent className="p-4 sm:p-6 space-y-6 text-sm text-gray-800">
           <div className="text-center">
@@ -289,9 +339,9 @@ const InvoiceClient = () => {
 
           <div className="text-sm mb-4 space-y-1">
             <p className="font-bold">Student Information</p>
-            <p>Student Name: {student.name}</p>
-            <p>Email: {student.email}</p>
-            <p>Phone: {student.phone}</p>
+            <p>Student Name: {form.watch("name")}</p>
+            <p>Email: {form.watch("email")}</p>
+            <p>Phone: {form.watch("phone")}</p>
           </div>
 
           <div className="overflow-x-auto">
@@ -323,7 +373,7 @@ const InvoiceClient = () => {
                       {item.discount}
                     </td>
                     <td className="border border-black px-3 py-2 text-right">
-                      ${Number(item.amount || 0).toFixed(2)}
+                      {Number(item.amount || 0).toFixed(2)}
                     </td>
                   </tr>
                 ))}
@@ -337,9 +387,7 @@ const InvoiceClient = () => {
                     Total Amount (USD)
                   </td>
                   <td className="border border-black px-3 py-2 text-right">
-                    {items
-                      .reduce((sum, i) => sum + (Number(i.amount) || 0), 0)
-                      .toFixed(2)}
+                    {calculateTotalWithDiscount(items).toFixed(2)}
                   </td>
                 </tr>
               </tfoot>
@@ -368,6 +416,3 @@ const InvoiceClient = () => {
     </div>
   );
 }
-
-
-export default InvoiceClient

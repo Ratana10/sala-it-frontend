@@ -33,6 +33,7 @@ export type InvoiceData = {
   studentInfo: IStudentInfo;
 
   items: InvoiceItem[];
+  totalAmount: number;
 };
 
 export function escapeHtml(s: string) {
@@ -132,13 +133,13 @@ export function SchoolInvoiceTemplate(data: InvoiceData) {
     <p>Phone: ${data.studentInfo.phone ?? "N/A"}</p>
   </div>
 
-  <table class="w-full border border-black border-collapse text-sm">
+  <table class="min-w-full border border-black border-collapse text-xs sm:text-sm">
     <thead class="bg-[#A4C1E2] text-center text-black">
   <tr>
-    <th class="border border-black px-2 py-1 text-left">No</th>
-    <th class="border border-black px-2 py-1 text-center">Description</th>
-    <th class="border border-black px-2 py-1 text-center">Discount (%)</th>
-    <th class="border border-black px-2 py-1 text-center">Amount (USD)</th>
+    <th class="border border-black px-2 py-1 w-[5%]">No</th>
+    <th class="border border-black px-2 py-1 w-[50%] text-left">Description</th>
+    <th class="border border-black px-2 py-1 w-[20%] text-center">Discount (%)</th>
+    <th class="border border-black px-2 py-1 w-[25%] text-center">Amount (USD)</th>
   </tr>
 </thead>
 <tbody>
@@ -147,11 +148,11 @@ export function SchoolInvoiceTemplate(data: InvoiceData) {
       (item, i) => `
     <tr>
       <td class="border border-black px-2 py-1 text-center">${i + 1}</td>
-      <td class="border border-black px-2 py-1">${item.description}</td>
-      <td class="border border-black px-2 py-1 text-center">${
+      <td class="border border-black px-3 py-2 break-words">${item.description}</td>
+      <td class="border border-black px-3 py-2 text-center">${
         item.discount
       }</td>
-      <td class="border border-black px-2 py-1 text-right">$${Number(
+      <td class="border border-black px-3 py-2 text-right">${Number(
         item.amount
       ).toFixed(2)}</td>
     </tr>`
@@ -162,7 +163,7 @@ export function SchoolInvoiceTemplate(data: InvoiceData) {
   <tr class="bg-gray-50 font-semibold">
     <td colspan="3" class="border border-black px-2 py-1 text-right">Total Amount (USD)</td>
     <td class="border border-black px-2 py-1 text-right">
-      ${data.items.reduce((s, i) => s + i.amount, 0).toFixed(2)}
+      ${data.totalAmount.toFixed(2)}
     </td>
   </tr>
 </tfoot>
@@ -175,7 +176,9 @@ export function SchoolInvoiceTemplate(data: InvoiceData) {
 
   <div class="mt-4">
     <p class="font-semibold">Signature:</p>
-    <img src="${data.schoolInfo.signatureUrl}" alt="Signature" class="w-32 h-auto mb-2" />
+    <img src="${
+      data.schoolInfo.signatureUrl
+    }" alt="Signature" class="w-32 h-auto mb-2" />
   </div>
 
 
