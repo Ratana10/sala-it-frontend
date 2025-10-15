@@ -93,7 +93,6 @@ export default function InvoiceBuilder() {
         email: student.email,
         phone: student.phone,
       },
-
       items,
     };
 
@@ -102,20 +101,20 @@ export default function InvoiceBuilder() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 grid md:grid-cols-2 gap-6">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 grid md:grid-cols-2 gap-6">
       {/* ================= Left Side: Form ================= */}
       <Card className="shadow-md print:hidden">
-        <CardContent className="p-6 space-y-6">
+        <CardContent className="p-4 sm:p-6 space-y-6">
           {/* Print Button on Left Panel */}
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center flex-wrap gap-2">
             <h2 className="text-lg font-semibold text-gray-800">Invoice</h2>
             <Button
               onClick={handlePrint}
               size="sm"
-              className=" text-white"
-              variant={"default"}
+              className="text-white"
+              variant="default"
             >
-              <DownloadIcon className="w-4 h-4" /> Print PDF
+              <DownloadIcon className="w-4 h-4 mr-1" /> Print PDF
             </Button>
           </div>
 
@@ -123,41 +122,20 @@ export default function InvoiceBuilder() {
           <div>
             <h3 className="font-medium mb-2">Student Information</h3>
             <div className="space-y-3">
-              <div className="space-y-2">
-                <Label>
-                  Name <span className="text-muted-foreground">(Optional)</span>
-                </Label>
-                <Input
-                  value={student.name}
-                  onChange={(e) =>
-                    setStudent({ ...student, name: e.target.value })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>
-                  Email{" "}
-                  <span className="text-muted-foreground">(Optional)</span>
-                </Label>
-                <Input
-                  value={student.email}
-                  onChange={(e) =>
-                    setStudent({ ...student, email: e.target.value })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>
-                  Phone{" "}
-                  <span className="text-muted-foreground">(Optional)</span>
-                </Label>
-                <Input
-                  value={student.phone}
-                  onChange={(e) =>
-                    setStudent({ ...student, phone: e.target.value })
-                  }
-                />
-              </div>
+              {["name", "email", "phone"].map((field) => (
+                <div key={field} className="space-y-2">
+                  <Label className="capitalize">
+                    {field}{" "}
+                    <span className="text-muted-foreground">(Optional)</span>
+                  </Label>
+                  <Input
+                    value={student[field as keyof typeof student]}
+                    onChange={(e) =>
+                      setStudent({ ...student, [field]: e.target.value })
+                    }
+                  />
+                </div>
+              ))}
             </div>
           </div>
 
@@ -165,20 +143,21 @@ export default function InvoiceBuilder() {
 
           {/* Items */}
           <div>
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
               <h3 className="font-medium">Course Items</h3>
               <Button
                 onClick={addItem}
                 size="sm"
-                className=" text-black cursor-pointer"
-                variant={"outline"}
+                className="text-black cursor-pointer"
+                variant="outline"
               >
                 + Add Item
               </Button>
             </div>
+
             <div className="space-y-2">
-              {/* Header labels - show only once */}
-              <div className="grid grid-cols-[2fr_1fr_1fr_auto] gap-2 text-sm font-medium text-gray-600">
+              {/* Header labels - hide on mobile */}
+              <div className="hidden sm:grid sm:grid-cols-[2fr_1fr_1fr_auto] gap-2 text-sm font-medium text-gray-600">
                 <span>Description</span>
                 <span className="text-center">Discount (%)</span>
                 <span className="text-center">Amount (USD)</span>
@@ -190,15 +169,15 @@ export default function InvoiceBuilder() {
                 {items.map((item) => (
                   <div
                     key={item.id}
-                    className="grid grid-cols-[2fr_1fr_1fr_auto] gap-2 items-start"
+                    className="grid gap-2 items-start sm:grid-cols-[2fr_1fr_1fr_auto] grid-cols-1 border border-gray-200 sm:border-0 p-2 sm:p-0 rounded-md bg-white sm:bg-transparent"
                   >
-                    {/* Description (takes 2x more space) */}
+                    {/* Description */}
                     <Textarea
                       value={item.description}
                       onChange={(e) =>
                         updateItem(item.id, "description", e.target.value)
                       }
-                      className="min-h-[60px] resize-none"
+                      className="min-h-[60px] resize-none w-full"
                       placeholder="Enter course details..."
                     />
 
@@ -209,6 +188,8 @@ export default function InvoiceBuilder() {
                       onChange={(e) =>
                         updateItem(item.id, "discount", Number(e.target.value))
                       }
+                      className="w-full"
+                      placeholder="Discount"
                     />
 
                     {/* Amount */}
@@ -218,19 +199,23 @@ export default function InvoiceBuilder() {
                       onChange={(e) =>
                         updateItem(item.id, "amount", Number(e.target.value))
                       }
+                      className="w-full"
+                      placeholder="Amount"
                     />
 
-                    {/* Action (smaller fixed width) */}
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      onClick={() => removeItem(item.id)}
-                      className="bg-red-600 hover:bg-red-700 text-white w-7 h-7 flex-shrink-0"
-                      disabled={items.length === 1}
-                    >
-                      <Trash2Icon className="w-3.5 h-3.5" />
-                    </Button>
+                    {/* Action Button */}
+                    <div className="flex justify-end sm:justify-center">
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        onClick={() => removeItem(item.id)}
+                        className="bg-red-600 hover:bg-red-700 text-white w-7 h-7"
+                        disabled={items.length === 1}
+                      >
+                        <Trash2Icon className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -242,28 +227,34 @@ export default function InvoiceBuilder() {
           {/* Remark */}
           <div>
             <Label>Remark</Label>
-            <Input value={remark} onChange={(e) => setRemark(e.target.value)} />
+            <Input
+              value={remark}
+              onChange={(e) => setRemark(e.target.value)}
+              placeholder="Enter remark..."
+            />
           </div>
         </CardContent>
       </Card>
 
       {/* ================= Right Side: Invoice Preview ================= */}
-      <Card className="shadow-lg border border-gray-200 print:shadow-none print:border-0">
-        <CardContent className="p-6 space-y-6 text-sm text-gray-800">
+      <Card className="shadow-lg border border-gray-200 print:shadow-none print:border-0 overflow-hidden">
+        <CardContent className="p-4 sm:p-6 space-y-6 text-sm text-gray-800">
           <div className="text-center">
             <img
               src={schoolInfo.logoUrl}
               alt="Sala-IT Logo"
-              className="w-40 h-40 mx-auto mb-2"
+              className="w-28 sm:w-40 h-auto mx-auto mb-2"
             />
-            <p className="text-sm text-black text-end">Invoice Date: {today}</p>
+            <p className="text-xs sm:text-sm text-black text-end">
+              Invoice Date: {today}
+            </p>
           </div>
 
           <div className="text-sm mb-4 space-y-1">
             <p className="font-bold text-[14px]">{schoolInfo.name}</p>
             <p>Phone: {schoolInfo.phone}</p>
             <p>
-              Telegram:
+              Telegram:{" "}
               <a
                 href={schoolInfo.telegramUrl}
                 target="_blank"
@@ -282,7 +273,6 @@ export default function InvoiceBuilder() {
                 {schoolInfo.email}
               </a>
             </p>
-
             <p>
               Website:{" "}
               <a
@@ -304,19 +294,17 @@ export default function InvoiceBuilder() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full border border-black border-collapse text-sm">
+            <table className="min-w-full border border-black border-collapse text-xs sm:text-sm">
               <thead className="bg-[#A4C1E2] text-center text-black">
                 <tr>
-                  <th className="border border-black px-2 py-1 text-left">
-                    No
-                  </th>
-                  <th className="border border-black px-2 py-1 text-center">
+                  <th className="border border-black px-2 py-1 w-[5%]">No</th>
+                  <th className="border border-black px-2 py-1 w-[50%] text-left">
                     Description
                   </th>
-                  <th className="border border-black px-2 py-1 text-center">
+                  <th className="border border-black px-2 py-1 w-[20%] text-center">
                     Discount (%)
                   </th>
-                  <th className="border border-black px-2 py-1 text-center">
+                  <th className="border border-black px-2 py-1 w-[25%] text-center">
                     Amount (USD)
                   </th>
                 </tr>
@@ -327,7 +315,7 @@ export default function InvoiceBuilder() {
                     <td className="border border-black px-2 py-1 text-center">
                       {index + 1}
                     </td>
-                    <td className="border border-black px-3 py-2">
+                    <td className="border border-black px-3 py-2 break-words">
                       {item.description}
                     </td>
                     <td className="border border-black px-3 py-2 text-center">
@@ -362,7 +350,7 @@ export default function InvoiceBuilder() {
             <p className="text-red-500">{schoolInfo.remark}</p>
           </div>
 
-          <p className="text-center text-xs text-black mt-6">
+          <p className="text-center text-xs sm:text-sm text-black mt-6">
             {schoolInfo.slogan}
           </p>
         </CardContent>
