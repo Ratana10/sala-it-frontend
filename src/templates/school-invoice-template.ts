@@ -18,6 +18,7 @@ export interface ISchoolInfo {
   websiteUrl: string;
   slogan: string;
   remark: string;
+  signatureUrl: string;
 }
 
 export interface IStudentInfo {
@@ -54,12 +55,27 @@ export function SchoolInvoiceTemplate(data: InvoiceData) {
 <script src="https://cdn.tailwindcss.com"></script>
 
 <style>
+   @page {
+    size: A4;
+    margin: 15mm;
+  }
+    
+  @page {
+      @bottom-center { content: none; }
+      @bottom-right { content: none; }
+      @bottom-left { content: none; }
+      @top-left { content: none; }
+      @top-right { content: none; }
+      @top-center { content: none; }
+    }
+
   @media print {
     @page { size: A4; margin: 15mm; }
     body { background: white; color: black; font-family: "Times New Roman", Times, serif; }
     thead th {
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
+      margin: 0;
     }
   }
 </style>
@@ -152,10 +168,16 @@ export function SchoolInvoiceTemplate(data: InvoiceData) {
 </tfoot>
   </table>
 
-  <div class="mt-4 text-sm">
-    <p><strong>Remark:</strong></p>
+  <div class="mt-4">
+    <p class="font-semibold">Remark:</p>
     <p class="text-red-500">${data.schoolInfo.remark}</p>
   </div>
+
+  <div class="mt-4">
+    <p class="font-semibold">Signature:</p>
+    <img src="${data.schoolInfo.signatureUrl}" alt="Signature" class="w-32 h-auto mb-2" />
+  </div>
+
 
   <p class="text-center text-xs text-black mt-6">
     ${data.schoolInfo.slogan}
